@@ -1,0 +1,184 @@
+import { useState, useEffect } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Asset, PortfolioMetrics, createDefaultAssets, optimizePortfolio, generateEfficientFrontier } from '@/lib/portfolio';
+import { MetricsGrid } from './MetricsGrid';
+import { EfficientFrontierChart } from './EfficientFrontierChart';
+import { AllocationChart } from './AllocationChart';
+import { AssetSelector } from './AssetSelector';
+import { Calculator, TrendingUp, Shield, Target } from 'lucide-react';
+
+export const PortfolioOptimizer = () => {
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [optimizedMetrics, setOptimizedMetrics] = useState<PortfolioMetrics | null>(null);
+  const [riskTolerance, setRiskTolerance] = useState<'low' | 'medium' | 'high'>('medium');
+  const [investmentHorizon, setInvestmentHorizon] = useState<string>('5');
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [efficientFrontier, setEfficientFrontier] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Initialize with default assets
+    const defaultAssets = createDefaultAssets();
+    setAssets(defaultAssets);
+    
+    // Auto-optimize on load
+    handleOptimize(defaultAssets);
+  }, []);
+
+  const handleOptimize = async (assetsToOptimize = assets) => {
+    if (assetsToOptimize.length < 2) return;
+    
+    setIsOptimizing(true);
+    
+    // Simulate processing time for professional feel
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    try {
+      const optimized = optimizePortfolio(assetsToOptimize);
+      setOptimizedMetrics(optimized);
+      
+      // Generate efficient frontier
+      const frontier = generateEfficientFrontier(assetsToOptimize);
+      setEfficientFrontier(frontier);
+      
+    } catch (error) {
+      console.error('Optimization failed:', error);
+    } finally {
+      setIsOptimizing(false);
+    }
+  };
+
+  const handleAssetChange = (newAssets: Asset[]) => {
+    setAssets(newAssets);
+    setOptimizedMetrics(null);
+    setEfficientFrontier([]);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="text-center space-y-4 animate-fade-in">
+          <div className="flex items-center justify-center space-x-3">
+            <div className="p-3 bg-primary rounded-lg">
+              <Calculator className="h-8 w-8 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary-hover bg-clip-text text-transparent">
+                Portfolio Optimization Tool
+              </h1>
+              <p className="text-lg text-muted-foreground mt-2">
+                Modern Portfolio Theory • Risk-Adjusted Returns • Asset Management
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-center space-x-6 text-sm text-muted-foreground">
+            <div className="flex items-center space-x-2">
+              <TrendingUp className="h-4 w-4 text-success" />
+              <span>Sharpe Ratio Optimization</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Shield className="h-4 w-4 text-primary" />
+              <span>Risk Metrics Analysis</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Target className="h-4 w-4 text-warning" />
+              <span>Efficient Frontier</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Configuration Panel */}
+        <Card className="p-6 animate-slide-up">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div className="lg:col-span-2">
+              <Label className="text-base font-semibold mb-3 block">Asset Selection</Label>
+              <AssetSelector assets={assets} onAssetsChange={handleAssetChange} />
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="risk-tolerance" className="text-sm font-medium">Risk Tolerance</Label>
+                <Select value={riskTolerance} onValueChange={(value: any) => setRiskTolerance(value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Conservative</SelectItem>
+                    <SelectItem value="medium">Moderate</SelectItem>
+                    <SelectItem value="high">Aggressive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <Label htmlFor="investment-horizon" className="text-sm font-medium">Investment Horizon (Years)</Label>
+                <Input
+                  id="investment-horizon"
+                  type="number"
+                  value={investmentHorizon}
+                  onChange={(e) => setInvestmentHorizon(e.target.value)}
+                  min="1"
+                  max="30"
+                />
+              </div>
+            </div>
+            
+            <div className="flex flex-col justify-end">
+              <Button 
+                onClick={() => handleOptimize()}
+                disabled={isOptimizing || assets.length < 2}
+                className="w-full h-12 text-base font-semibold"
+              >
+                {isOptimizing ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Optimizing...</span>
+                  </div>
+                ) : (
+                  'Optimize Portfolio'
+                )}
+              </Button>
+            </div>
+          </div>
+        </Card>
+
+        {/* Results */}
+        {optimizedMetrics && (
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 animate-fade-in">
+            {/* Metrics */}
+            <div className="xl:col-span-1">
+              <MetricsGrid metrics={optimizedMetrics} riskTolerance={riskTolerance} />
+            </div>
+            
+            {/* Charts */}
+            <div className="xl:col-span-2 space-y-6">
+              <EfficientFrontierChart 
+                frontierData={efficientFrontier}
+                optimizedPoint={optimizedMetrics}
+              />
+              
+              <AllocationChart 
+                assets={assets}
+                weights={optimizedMetrics.weights}
+              />
+            </div>
+          </div>
+        )}
+        
+        {/* Professional Footer */}
+        <div className="text-center py-8 border-t border-border">
+          <p className="text-sm text-muted-foreground">
+            Built with Modern Portfolio Theory • Demonstrating quantitative finance expertise for Goldman Sachs Asset Management
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
